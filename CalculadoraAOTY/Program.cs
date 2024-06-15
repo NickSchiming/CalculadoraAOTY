@@ -5,7 +5,7 @@ namespace CalculadoraAOTY
     internal abstract partial class Program
     {
         private static readonly char[] Separator = ['\r', '\n'];
-        private static readonly string[] Skipstring = ["Tracks", "feat.", "with", "\u00a9", "SAVE", "Updated"];
+        private static readonly string[] SkipString = ["Tracks", "feat.", "with", "\u00a9", "SAVE", "Updated"];
 
         private static void Main()
         {
@@ -26,41 +26,55 @@ namespace CalculadoraAOTY
                 var ratings = texto[crindex..];
                 var lines = ratings.Split(Separator, StringSplitOptions.RemoveEmptyEntries);
                 var scorepond = 0.0;
-                var tempopond = 0.0;
-                var totsecs = 0.0;
+                var totalTimePond = 0.0;
+                var totalSeconds = 0.0;
                 var sumScore = 0.0;
 
                 var index = 1;
                 var cleanTime = "";
+                
                 foreach (var line in lines)
                 {
-
-                    var skip = false;
-                    var trim = line.Trim();
+                    var trimmedLine = line.Trim();
 
 
 
-                    if (line.Length > 3)
+                    if (trimmedLine.Length > 3 && !SkipString.Any(s => trimmedLine.Contains(s)))
                     {
-                        //Console.WriteLine(line);
-                        if (Skipstring.Any(s => line.Contains(s)))
+                        var match = MyRegex2().Match(trimmedLine);
+                        
+                        if (match.Success)
                         {
-                            skip = true;
+                            var precedingChar = match.Groups[1].Value[0];
+                            var lastFiveChar = match.Groups[2].Value;
+                            var firstDigit = match.Groups[2].Value[0];
+
+
+                            cleanTime = lastFiveChar.Length > 4 && (precedingChar == ' ' || char.IsDigit(precedingChar) || firstDigit > '4')
+                                ? MyRegex().Replace(trimmedLine[^4..], "")
+                                : MyRegex().Replace(trimmedLine[^5..], "");
+
+
+
+                            var seconds = int.Parse(cleanTime[^2..]);
+                            var minutes = int.Parse(cleanTime[..^2].Replace(":", ""));
+                            totalSeconds = seconds + minutes * 60;
+                            totalTimePond += totalSeconds;
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Erro: linha ({line}) não corresponde ao padrão esperado");
+                            Console.WriteLine("Press Enter to exit...");
+                            Console.ReadLine();
+                            return;
                         }
 
-                        if (skip) continue;
-                        cleanTime = MyRegex().Replace(trim[^5..], "");
-
-                        var seconds = cleanTime[^2..];
-                        var minutes = cleanTime[..^2].Replace(":", "");
-                        totsecs = int.Parse(seconds) + int.Parse(minutes) * 60;
-                        tempopond += totsecs;
                     }
-                    else if (MyRegex1().IsMatch(trim))
+                    else if (MyRegex1().IsMatch(trimmedLine))
                     {
-                        var score = int.Parse(trim);
+                        var score = int.Parse(trimmedLine);
                         sumScore += score;
-                        scorepond += score * totsecs;
+                        scorepond += score * totalSeconds;
                         Console.WriteLine($"{index} - tempo: {cleanTime} - score: {score}");
                         index++;
                     }
@@ -69,10 +83,10 @@ namespace CalculadoraAOTY
 
                 }
 
-                if (tempopond != 0)
+                if (totalTimePond != 0)
                 {
-                    Console.WriteLine($"--------------------------");
-                    var pondAverage = Math.Round(scorepond / tempopond);
+                    Console.WriteLine("--------------------------");
+                    var pondAverage = Math.Round(scorepond / totalTimePond);
                     var average = Math.Round(sumScore / (index - 1));
                     Console.WriteLine($"Média: {average}");
                     Console.WriteLine($"Média Ponderada: {pondAverage}");
@@ -96,5 +110,7 @@ namespace CalculadoraAOTY
 
         [GeneratedRegex(@"^\d{2,3}$")]
         private static partial Regex MyRegex1();
+        [GeneratedRegex(@"(.)(\d{1,2}\D\d{2})$")]
+        private static partial Regex MyRegex2();
     }
 }
