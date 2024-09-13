@@ -5,7 +5,7 @@ namespace CalculadoraAOTY
     internal abstract partial class Program
     {
         private static readonly char[] Separator = ['\r', '\n'];
-        private static readonly string[] SkipString = ["Tracks", "feat.", "with", "\u00a9", "SAVE", "Updated"];
+        private static readonly string[] SkipString = ["Rate", "feat.", "with", "\u00a9", "Save", "Updated"];
 
         private static void Main()
         {
@@ -37,9 +37,11 @@ namespace CalculadoraAOTY
                 {
                     var trimmedLine = line.Trim();
 
+                    var firstWord = trimmedLine.Split(" ").FirstOrDefault();
+                    if (firstWord == null)
+                        continue;
 
-
-                    if (trimmedLine.Length > 3 && !SkipString.Any(s => trimmedLine.Contains(s)))
+                    if (trimmedLine.Length > 3 && !SkipString.Any(s => firstWord.Contains(s)))
                     {
                         var match = MyRegex2().Match(trimmedLine);
                         
@@ -108,7 +110,7 @@ namespace CalculadoraAOTY
         [GeneratedRegex(@"^[^\d]*")]
         private static partial Regex MyRegex();
 
-        [GeneratedRegex(@"^\d{2,3}$")]
+        [GeneratedRegex(@"^100|\d{1,2}$")]
         private static partial Regex MyRegex1();
         [GeneratedRegex(@"(.)(\d{1,2}\D\d{2})$")]
         private static partial Regex MyRegex2();
